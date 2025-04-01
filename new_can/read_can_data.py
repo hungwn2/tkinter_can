@@ -11,14 +11,9 @@ import cantools
 import can
 import requests
 import asyncio
-from influxdb_client import InfluxDBClient, Point, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS
+import queue
 
-# InfluxDB config
-token = "123456"
-org = "midnightsun"
-raw_bucket = "raw_data"
-converted_bucket = "converted_data"
+
 
 # Disables printing
 def blockPrint():
@@ -35,6 +30,7 @@ options = parser.parse_args()
 client = InfluxDBClient(url="http://localhost:8086", token=token)
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
+message_queue=queue
 can_channel="vcan0"
 can_bustype="socketcan"
 can_bitrate=800000
@@ -72,43 +68,26 @@ async def update_can_settings():
 async def decode_and_send():
     while True:
         message = can_bus.recv()
-        decoded = db.decode_message(message.arbitration_id, message.data)
-        print(decoded) # dict datatype
+        if message:
+            decoded = db.decode_message(message.arbitration_id, message.data)
 
-        time = str(datetime.fromtimestamp(message.timestamp))
-        name = db.get_message_by_frame_id(message.arbitration_id).name
-        sender = db.get_message_by_frame_id(message.arbitration_id).senders[0]
+            msg_info={
+                 "timestamp" :str(datetime.fromtimestamp(message.timestamp)),
+                 "name" : db.get_message_by_frame_id(message.arbitration_id).name,
+                 "sender" : db.get_message_by_frame_id(message.arbitration_id).senders[0],
+                 "arbitration_id": hex(message.arbitration_id),
+                 "dlc": message.dlc,
+                 "hex": message.data.hex(),
+                 "bin_data": ''.join(format(byte, '08b')).
+                 "dec" : int.from_bytes(message.data, byteorder='big', signed=False), 
+                 "decoded_data": decoded
+            }
+            message_queue.put(msg_info)
+            print(msg_info) 
+            await asyncio.sleep(0)
 
-        # if -s flag is set, silence output
-        if options.s:
-            blockPrint()
-
-        # hexadecimal representation of data
-        hex = ''.join('{:02x}'.format(x) for x in message.data)
-        print(hex)
-
-        # binary rep. of data
-        # most significant bit
-        bin = ''.join(format(byte, '08b') for byte in message.data)
-        print(bin)
-
-        # decimal rep. of data
-        dec = int.from_bytes(message.data, byteorder='big', signed=False)
-        print(dec)
-
-        print(message.arbitration_id)
-        print(message.dlc)
-        print(message.data)
-
-        conpoints = []
-        for key, value in decoded.items():
-            conpoints.append(Point(sender).field(key, value).tag("name", name).field("dec", dec).tag("arbitration_id", message.arbitration_id).tag("dlc", message.dlc).tag("hex", hex).tag("bin", bin).tag("channel", message.channel).tag("bustype", can_bustype).tag("bitrate", can_bitrate))
-        
-        write_api.write(converted_bucket, org, conpoints)
-        await asyncio.sleep(0.01)
-
-# run read script forever
-loop = asyncio.get_event_loop()
-asyncio.ensure_future(decode_and_send())
-asyncio.ensure_future(update_can_settings())
-loop.run_forever()
+def start_reading():
+    loop = asyncio.get_event_loop()
+    asyncio.ensure_future(decode_and_send())
+    asyncio.ensure_future(update_can_settings())
+    loop.run_forever()
