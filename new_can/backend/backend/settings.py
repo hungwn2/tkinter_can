@@ -41,6 +41,15 @@ INSTALLED_APPS = [
     'djangorestframework'
 ]
 
+
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://frontend:3000' # frontend docker service
+)
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
