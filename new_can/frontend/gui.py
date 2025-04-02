@@ -3,9 +3,19 @@ from tkinter import ttk, messagebox
 import requests
 import json
 
-API_BASE_URL = 
+import matplotlib.ply as plt
+import pandas as pd
+
+API_BASE_URL = '127.0.0.01'
+
 #idk not done
 
+class CanMonitorApp:
+    def __init__(self, root):
+        self.root=root
+        self.root.title("CAN Explorer (Tkinter)")
+
+    
 def fetch_can_data():
     try:
         response = requests.get(f"{API_BASE_URL}/can_data")
@@ -33,8 +43,6 @@ def send_can_message():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", f"Failed to send message: {e}")
 
-root = tk.Tk()
-root.title("CAN Explorer (Tkinter)")
 
 tree = ttk.Treeview(root, columns=("ID", "Data"), show="headings")
 tree.heading("ID", text="CAN ID")

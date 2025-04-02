@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from can_server.models import DbcFile, CanSettings, SelectedDBCFile
+from .models import DbcFile, CanSettings, SelectedDBCFile
 
 
 class DbcFileSerializer(serializers.ModelSerializer):

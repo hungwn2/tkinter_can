@@ -86,6 +86,9 @@ async def decode_and_send():
             print(msg_info) 
             await asyncio.sleep(0)
 
+async def clear_queue():
+    if message_queue.size()>50:
+
 def start_reading():
     loop = asyncio.get_event_loop()
     asyncio.ensure_future(decode_and_send())

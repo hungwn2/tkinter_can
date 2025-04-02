@@ -3,11 +3,11 @@ import re
 def syntax_highlight(json_file):
     if not isinstance (json_file, str):
         json_file=json.dumps(json_file, indent=2)
-    json_file=(
+    json_file= (
         json_file.replace("&", "&amp;")
         .replace("<", "&lt;")
-        .replace("">"", "&gt;");
-    )
+            .replace(">", "&gt;")
+        )
     def replacer(match):
         match_text = match.group(0)
         

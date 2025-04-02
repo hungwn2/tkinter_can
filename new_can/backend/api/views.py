@@ -12,6 +12,9 @@ from can_server.models import DbcFile, CanSettings, SelectedDBCFile
 from can_server.serializers import CanSettingsSerializer, DbcFileSerializer, SelectedDBCFileSerializer
 
 ALREADY_EXISTS_ERROR = "dbc file with this FileName already exists."
+can_bus = can.interface.Bus('vcan0', bustype='socketcan')
+
+def contex
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
@@ -73,7 +76,7 @@ def read_file(request):
 @api_view(['PATCH'])
 @parser_classes([MultiPartParser])
 def update_dbc_file(request):
-    # Get dbc file as bytes
+    # Get dbc file as bytesa\
     file = request.FILES['data']
     dbc_file_data = file.read()
 
@@ -151,7 +154,6 @@ def get_can_messages(request, filename):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def send_can_message(request):
-    can_bus = can.interface.Bus('vcan0', bustype='socketcan')
     data = {}
     signals = request.data["signals"]
     frame_id = int(request.data["frame_id"])
@@ -241,11 +243,22 @@ def change_can_settings(request):
 @api_view(['GET'])
 def get_can_settings(request):
     # should only be one instance
-    settings = CanSettings.objects.all().first()
-    settings_serializer = CanSettingsSerializer(settings)
+    try:
+        settings = CanSettings.objects.all().first()
+        if settings:
+            settings_serializer = CanSettingsSerializer(settings)
+            return JsonResponse(settings_serializer.data, status=200)
 
-    return JsonResponse(settings_serializer.data, status=200)
-
+        else:
+             default_settings = {
+                'channel': 'vcan0',
+                'bustype': 'socketcan',
+                'bitrate': 800000
+            }
+             return JsonResponse(default_settings, status=200)
+    except Exception as e:
+        logger.error(f"Error retrieving CAN settings, {e}")
+        return
 
 @api_view(['GET'])
 def get_current_file(request):
